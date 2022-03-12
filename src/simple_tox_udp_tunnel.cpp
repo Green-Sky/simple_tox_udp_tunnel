@@ -139,7 +139,7 @@ class TunnelService {
 	void run(void) {
 		while (true) {
 			using namespace std::literals;
-			std::this_thread::sleep_for(4ms);
+			std::this_thread::sleep_for(1ms);
 
 			tox_iterate(_tox, this);
 
@@ -153,7 +153,10 @@ class TunnelService {
 			zed_net_address_t sender;
 			int bytes_read = zed_net_udp_socket_receive(&_socket, &sender, buffer + 1, buffer_size);
 			if (bytes_read) {
-				printf("Received %d bytes from %s:%d: %s\n", bytes_read, zed_net_host_to_str(sender.host), sender.port, buffer + 1);
+#ifndef NDEBUG
+				//printf("Received %d bytes from %s:%d: %s\n", bytes_read, zed_net_host_to_str(sender.host), sender.port, buffer + 1);
+				printf("Received %d bytes from %s:%d\n", bytes_read, zed_net_host_to_str(sender.host), sender.port);
+#endif
 				if (_in) {
 					_send_to = sender;
 				}
@@ -181,7 +184,9 @@ class TunnelService {
 			if (zed_net_udp_socket_send(&_socket, _send_to, data+1, length-1)) {
 				std::cerr << "error sending " << zed_net_get_error() << "\n";
 			} else {
+#ifndef NDEBUG
 				std::cout << "sent " << length-1 << "\n";
+#endif
 			}
 		} else {
 			std::cerr << "no idea where to\n";
@@ -214,7 +219,9 @@ inline void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t
 
 // custom packets
 inline void friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void* user_data) {
+#ifndef NDEBUG
 	std::cout << "friend_lossy_packet_cb " << length << "\n";
+#endif
 	static_cast<TunnelService*>(user_data)->handle_packet(data, length);
 }
 
