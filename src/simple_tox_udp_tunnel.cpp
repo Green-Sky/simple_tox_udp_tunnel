@@ -1,5 +1,6 @@
 extern "C" {
-#include <tox/tox.h>
+//#include <tox/tox.h>
+#include <tox.h>
 #include <sodium.h>
 #include <zed_net.h>
 }

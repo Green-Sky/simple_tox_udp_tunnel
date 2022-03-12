@@ -7,3 +7,8 @@ add_library(zed_net
 
 target_include_directories(zed_net PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
+if(WIN32)
+	#target_link_libraries(zed_net ws2_32 iphlpapi)
+	target_link_libraries(zed_net ws2_32)
+endif()
+

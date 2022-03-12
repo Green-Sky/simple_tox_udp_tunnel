@@ -42,8 +42,10 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL
 		-Wshadow # Warn if a variable declaration shadows one from a parent context
 	)
 
-	link_libraries(-fsanitize=address,undefined)
-	#link_libraries(-fsanitize=undefined)
+	if (NOT WIN32)
+		link_libraries(-fsanitize=address,undefined)
+		#link_libraries(-fsanitize=undefined)
+	endif()
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 		string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
