@@ -97,8 +97,8 @@ add_library(toxcore STATIC
 
 target_include_directories(toxcore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/c-toxcore/toxcore")
 
-#target_compile_definitions(toxcore PUBLIC USE_IPV6=1)
-#target_compile_definitions(toxcore PUBLIC MIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE)
+target_compile_definitions(toxcore PUBLIC USE_IPV6=1)
+target_compile_definitions(toxcore PUBLIC MIN_LOGGER_LEVEL=LOGGER_LEVEL_DEBUG)
 
 target_link_libraries(toxcore msgpackc)
 

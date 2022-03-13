@@ -88,6 +88,7 @@ class TunnelService {
 #endif
 			tox_options_set_udp_enabled(options, true);
 			tox_options_set_hole_punching_enabled(options, true);
+			tox_options_set_tcp_port(options, 0);
 
 			TOX_ERR_NEW err_new;
 			_tox = tox_new(options, &err_new);
@@ -106,6 +107,36 @@ class TunnelService {
 
 			CALLBACK_REG(friend_lossy_packet);
 #undef CALLBACK_REG
+
+#if 0 // enable and fill for bootstrapping and tcp relays
+			// dht bootstrap
+			{
+				struct DHT_node {
+					const char *ip;
+					uint16_t port;
+					const char key_hex[TOX_PUBLIC_KEY_SIZE*2 + 1]; // 1 for null terminator
+					unsigned char key_bin[TOX_PUBLIC_KEY_SIZE];
+				};
+
+				DHT_node nodes[] =
+				{
+					// own bootsrap node, to reduce load
+					{"tox.plastiras.org",					33445,	"8E8B63299B3D520FB377FE5100E65E3322F7AE5B20A0ACED2981769FC5B43725", {}}, // 14
+				};
+
+				for (size_t i = 0; i < sizeof(nodes)/sizeof(DHT_node); i ++) {
+					sodium_hex2bin(
+						nodes[i].key_bin, sizeof(nodes[i].key_bin),
+						nodes[i].key_hex, sizeof(nodes[i].key_hex)-1,
+						NULL, NULL, NULL
+					);
+					tox_bootstrap(_tox, nodes[i].ip, nodes[i].port, nodes[i].key_bin, NULL);
+					// TODO: use extra tcp option to avoid error msgs
+					// ... this is hardcore
+					tox_add_tcp_relay(_tox, nodes[i].ip, nodes[i].port, nodes[i].key_bin, NULL);
+				}
+			}
+#endif
 
 		}
 	}
