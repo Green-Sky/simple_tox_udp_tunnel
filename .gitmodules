@@ -2,9 +2,3 @@
 	path = external/toxcore/c-toxcore
 	url = https://github.com/TokTok/c-toxcore.git
 	shallow = true
-[submodule "external/toxcore/msgpack-c"]
-	path = external/toxcore/msgpack-c
-	url = https://github.com/msgpack/msgpack-c.git
-	branch = c_master
-	shallow = true
-	ignore = dirty

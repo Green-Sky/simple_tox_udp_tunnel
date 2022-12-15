@@ -1,3 +1,4 @@
+#include <ostream>
 extern "C" {
 //#include <tox/tox.h>
 #include <tox.h>
@@ -13,7 +14,7 @@ extern "C" {
 #include <optional>
 #include <iostream>
 
-inline std::vector<uint8_t> hex2bin(const std::string& str) {
+static std::vector<uint8_t> hex2bin(const std::string& str) {
 	std::vector<uint8_t> bin{};
 	bin.resize(str.size()/2, 0);
 
@@ -22,7 +23,7 @@ inline std::vector<uint8_t> hex2bin(const std::string& str) {
 	return bin;
 }
 
-inline std::string bin2hex(const std::vector<uint8_t>& bin) {
+static std::string bin2hex(const std::vector<uint8_t>& bin) {
 	std::string str{};
 	str.resize(bin.size()*2, '?');
 
@@ -32,7 +33,7 @@ inline std::string bin2hex(const std::vector<uint8_t>& bin) {
 	return str;
 }
 
-inline std::string tox_get_own_address(const Tox *tox) {
+static std::string tox_get_own_address(const Tox *tox) {
 	std::vector<uint8_t> self_addr{};
 	self_addr.resize(TOX_ADDRESS_SIZE);
 
@@ -42,11 +43,11 @@ inline std::string tox_get_own_address(const Tox *tox) {
 }
 
 // callbacks
-inline void log_cb(Tox*, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *);
-inline void self_connection_status_cb(Tox*, TOX_CONNECTION connection_status, void *);
-inline void friend_connection_status_cb(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status, void *);
-inline void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *);
-inline void friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void*);
+static void log_cb(Tox*, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *);
+static void self_connection_status_cb(Tox*, TOX_CONNECTION connection_status, void *);
+static void friend_connection_status_cb(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status, void *);
+static void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *);
+static void friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void*);
 
 class TunnelService {
 	const bool _in;
@@ -108,9 +109,7 @@ class TunnelService {
 			CALLBACK_REG(friend_lossy_packet);
 #undef CALLBACK_REG
 
-#if 0 // enable and fill for bootstrapping and tcp relays
-			// dht bootstrap
-			{
+			{ // dht bootstrap
 				struct DHT_node {
 					const char *ip;
 					uint16_t port;
@@ -120,8 +119,9 @@ class TunnelService {
 
 				DHT_node nodes[] =
 				{
-					// own bootsrap node, to reduce load
-					{"tox.plastiras.org",					33445,	"8E8B63299B3D520FB377FE5100E65E3322F7AE5B20A0ACED2981769FC5B43725", {}}, // 14
+					// you can change or add your own bs and tcprelays here, ideally closer to you
+					{"tox.plastiras.org",	33445,	"8E8B63299B3D520FB377FE5100E65E3322F7AE5B20A0ACED2981769FC5B43725", {}}, // LU tha14
+					{"tox2.plastiras.org",	33445,	"B6626D386BE7E3ACA107B46F48A5C4D522D29281750D44A0CBA6A2721E79C951", {}}, // DE tha14
 				};
 
 				for (size_t i = 0; i < sizeof(nodes)/sizeof(DHT_node); i ++) {
@@ -136,8 +136,6 @@ class TunnelService {
 					tox_add_tcp_relay(_tox, nodes[i].ip, nodes[i].port, nodes[i].key_bin, NULL);
 				}
 			}
-#endif
-
 		}
 	}
 
@@ -185,8 +183,7 @@ class TunnelService {
 			int bytes_read = zed_net_udp_socket_receive(&_socket, &sender, buffer + 1, buffer_size);
 			if (bytes_read) {
 #ifndef NDEBUG
-				//printf("Received %d bytes from %s:%d: %s\n", bytes_read, zed_net_host_to_str(sender.host), sender.port, buffer + 1);
-				printf("Received %d bytes from %s:%d\n", bytes_read, zed_net_host_to_str(sender.host), sender.port);
+				std::cout << "Received " << bytes_read << " bytes from " << zed_net_host_to_str(sender.host) << ":" << sender.port << "\n";
 #endif
 				if (_in) {
 					_send_to = sender;
@@ -225,31 +222,40 @@ class TunnelService {
 	}
 };
 
-inline void log_cb(Tox*, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *) {
+static std::ostream& operator<<(std::ostream& out, TOX_CONNECTION con) {
+	switch (con) {
+		case TOX_CONNECTION::TOX_CONNECTION_NONE: out << "none"; break;
+		case TOX_CONNECTION::TOX_CONNECTION_TCP: out << "tcp-relay"; break;
+		case TOX_CONNECTION::TOX_CONNECTION_UDP: out << "udp-direct"; break;
+	}
+	return out;
+}
+
+static void log_cb(Tox*, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *) {
 	std::cerr << "TOX " << level << " " << file << ":" << line << "(" << func << ") " << message << "\n";
 }
 
-inline void self_connection_status_cb(Tox*, TOX_CONNECTION connection_status, void *) {
-	std::cout << "self_connection_status_cb " << connection_status << "\n";
+static void self_connection_status_cb(Tox*, TOX_CONNECTION connection_status, void *) {
+	std::cout << "self_connection_status: " << connection_status << "\n";
 }
 
 // friend
-inline void friend_connection_status_cb(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status, void* user_data) {
-	std::cout << "friend_connection_status_cb " << connection_status << "\n";
+static void friend_connection_status_cb(Tox*, uint32_t friend_number, TOX_CONNECTION connection_status, void* user_data) {
+	std::cout << "friend_connection_status: " << connection_status << "\n";
 	if (connection_status != TOX_CONNECTION_NONE) {
 		static_cast<TunnelService*>(user_data)->friend_online(friend_number);
 	}
 }
 
-inline void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length, void *) {
-	std::cout << "friend_request_cb\n";
+static void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t* /*message*/, size_t /*length*/, void *) {
+	std::cout << "friend_request\n";
 
 	Tox_Err_Friend_Add e_fa = TOX_ERR_FRIEND_ADD::TOX_ERR_FRIEND_ADD_OK;
 	tox_friend_add_norequest(tox, public_key, &e_fa);
 }
 
 // custom packets
-inline void friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void* user_data) {
+static void friend_lossy_packet_cb(Tox*, uint32_t /*friend_number*/, const uint8_t *data, size_t length, void* user_data) {
 #ifndef NDEBUG
 	std::cout << "friend_lossy_packet_cb " << length << "\n";
 #endif
@@ -281,6 +287,7 @@ int main(int argc, char** argv) {
 
 	// port
 	uint16_t port = atoi(argv[2]);
+	// TODO: remove this check?
 	if (port < 1024) {
 		std::cerr << "error: port must be at least 1024\n";
 		return -1;

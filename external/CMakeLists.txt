@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 # HACK
 
 if(${TOXCORE_HACK})
-
 	#add_library(toxcore SHARED IMPORTED GLOBAL)
 	#set_property(TARGET toxcore PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/../../tmp_tox_install/lib/libtoxcore.so.2")
 
